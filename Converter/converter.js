@@ -84,6 +84,7 @@ var video = {
 	source: '',
 	output: '',
 	title: '',
+	filters: '',
 	fps: 0,
 	width: 0,
 	height: 0,
@@ -189,22 +190,24 @@ if(!fs.existsSync(temp_path)) {
 }
 
 //These filters can include stuff such as: eq=brightness=-0.12:contrast=1.5
-var additional_filters = process.argv[7] || ''
-if(additional_filters != '') {
-	additional_filters += ','
+video.filters = process.argv[7] || ''
+if(video.filters != '') {
+	video.filters += ','
 }
+video.filters += 'format=pal8,format=monob'
 
 console.log(``)
 console.log(`Video Title:\t${video.title}`)
 console.log(`Video FPS:\t${video.fps}`)
 console.log(`Width:\t\t${video.width}`)
 console.log(`Height:\t\t${video.height}`)
+console.log(`Filters:\t\t${filters}`)
 console.log(``)
 console.log(`Converting ${video.source} into frames...`)
 console.log(``)
 
 ffmpeg(video.source)
-	.videoFilters(`${additional_filters}format=pal8,format=monob`)
+	.videoFilters(filters)
 	.size(`${video.width}x${video.height}`)
 	.outputOptions([`-r ${video.fps}`])
 	.save(temp_path + `%05d.png`)
