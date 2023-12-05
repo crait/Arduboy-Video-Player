@@ -667,7 +667,7 @@ void show_video() {
 	arduboy.drawRect(buttons[selected_item].x, HEIGHT - toolbar_offset + 7, buttons[selected_item].width, 8, WHITE);
 
 	if(info_offset > 0) {
-		uint8_t w = max(max(7, title_length), duration_length) * (5);
+		uint8_t w = max(max(7, title_length - 1), duration_length - 1) * (6);
 		uint8_t x = WIDTH / 2 - w / 2;
 
 		arduboy.fillRect(x - 10, HEIGHT / 2 - info_offset / 2, w + 20, info_offset, BLACK);
