@@ -712,6 +712,9 @@ void show_video() {
 
 	if(show_bar) {
 		if(toolbar_offset < TOOLBAR_HEIGHT) {
+			if(fps < 10) {
+				toolbar_offset++;
+			}
 			toolbar_offset++;
 		} else {
 			if(info_offset == 0) {
@@ -733,6 +736,9 @@ void show_video() {
 		}
 	} else {
 		if(toolbar_offset > 0) {
+			if(fps < 10) {
+				toolbar_offset--;
+			}
 			toolbar_offset--;
 		} else {
 			if(arduboy.justReleased(B_BUTTON)) {
@@ -774,6 +780,9 @@ void show_video() {
 		arduboy.drawBitmap(0, 0 - title_transition, title_screen, 128, 64, WHITE);
 
 		title_transition += 3;
+		if(fps < 10) {
+			title_transition += 13 - fps;
+		}
 		if(title_transition >= 64) {
 			title_transition = 64;
 		}
@@ -789,6 +798,7 @@ void setup() {
 	height = FX::readIndexedUInt16(0x0000, 2);
 	frame_count = FX::readIndexedUInt16(0x0000, 3);
 	fps = FX::readIndexedUInt16(0x0000, 4);
+	fps = 4;
 	title_length = FX::readIndexedUInt16(0x0000, 5);
 	duration_length = FX::readIndexedUInt16(0x0000, 6);
 
