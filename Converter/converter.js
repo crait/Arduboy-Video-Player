@@ -114,30 +114,42 @@ while(video.fps <= 0) {
 	}
 }
 
-var validate_width = (given) => {
+var validate_width = (given, warn = true) => {
 	if(given > 128) {
-		console.warn(`The width cannot be greater than 128 pixels.`)
+		if(warn) {
+			console.warn(`The width cannot be greater than 128 pixels.`)
+		}
 		given = 0
 	} else if(given <= 0) {
-		console.warn(`The width cannot be 0 or less.`)
+		if(warn) {
+			console.warn(`The width cannot be 0 or less.`)
+		}
 		given = 0
 	} else if(given % 2 != 0) {
-		console.warn(`The width must be even!`)
+		if(warn) {
+			console.warn(`The width must be even!`)
+		}
 		given = 0
 	}
 
 	return given
 }
 
-var validate_height = (given) => {
+var validate_height = (given, warn = true) => {
 	if(given > 64) {
-		console.warn(`The height cannot be greater than 64 pixels.`)
+		if(warn) {
+			console.warn(`The height cannot be greater than 64 pixels.`)
+		}
 		given = 0
 	} else if(given <= 0) {
-		console.warn(`The height cannot be 0 or less.`)
+		if(warn) {
+			console.warn(`The height cannot be 0 or less.`)
+		}
 		given = 0
 	} else if(given % 8 != 0) {
-		console.warn(`The height must be a multiple of 8, such as: 8, 16, 24, 32, 40, 48, 56, or 64`)
+		if(warn) {
+			console.warn(`The height must be a multiple of 8, such as: 8, 16, 24, 32, 40, 48, 56, or 64`)
+		}
 		given = 0
 	}
 
@@ -147,19 +159,21 @@ var validate_height = (given) => {
 video.width = process.argv[5] || 0
 video.height = process.argv[6] || 0
 
-if(validate_width(video.width) == 0 || validate_height(video.height) == 0) {
+if(validate_width(video.width, false) == 0 || validate_height(video.height, false) == 0) {
 	console.log(`To continue, please provide a width and height for the video file.`)
 	console.log(`- If you want your video to fit the entire screen, provide a width of 128 and a height of 64.`)
 	console.log(`- If you want your video to have a 16:9 aspect ratio, provide a width of 114 and a height of 64.`)
 	console.log(`- If you want your video to have a 4:3 aspect ratio, provide a width of 86 and a height of 64.`)
 }
 
-while(validate_width(video.width) == 0) {
+while(validate_width(video.width, false) == 0) {
 	video.width = readline.questionInt(`Width: `)
+	video.width = validate_width(video.width, true)
 }
 
-while(validate_height(video.height) == 0) {
+while(validate_height(video.height, false) == 0) {
 	video.height = readline.questionInt(`Height: `)
+	video.height = validate_height(video.height, true)
 }
 
 var base = path.parse(video.source).name
@@ -174,6 +188,12 @@ if(!fs.existsSync(temp_path)) {
 	fs.mkdirSync(temp_path)
 }
 
+//These filters can include stuff such as: eq=brightness=-0.12:contrast=1.5
+var additional_filters = process.argv[7] || ''
+if(additional_filters != '') {
+	additional_filters += ','
+}
+
 console.log(``)
 console.log(`Video Title:\t${video.title}`)
 console.log(`Video FPS:\t${video.fps}`)
@@ -184,7 +204,7 @@ console.log(`Converting ${video.source} into frames...`)
 console.log(``)
 
 ffmpeg(video.source)
-	.videoFilters(`eq=brightness=-0.12:contrast=1.5,format=pal8,format=monob`)
+	.videoFilters(`${additional_filters}format=pal8,format=monob`)
 	.size(`${video.width}x${video.height}`)
 	.outputOptions([`-r ${video.fps}`])
 	.save(temp_path + `%05d.png`)

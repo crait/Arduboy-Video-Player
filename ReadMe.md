@@ -42,7 +42,7 @@ The Arduboy Video Converter will create the a `.bin` file that contains the vide
 1. Place your video file in the `Converter/` directory
 2. Using Command Prompt (or Terminal), navigate to the `Converter/` directory
 3. Run the Arduboy Video Converter by using `npm start`
-4. You must provide several pieces of information for the video to be converted, such as the video filename, the height, width, FPS, etc. To skip these questions, you can use `npm start [file] [title] [fps] [width] [height]`.
+4. You must provide several pieces of information for the video to be converted, such as the video filename, the height, width, FPS, etc. To skip these questions, you can use `npm start [file] [title] [fps] [width] [height] [additional filters]`.
 5. This process will create a `.bin` and `video.h` file in the `Converter/` directory
 6. Move the `video.h` file to the `Player/` directory
 7. Open the `Player.ino` sketch with the Arduino IDE
