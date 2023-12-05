@@ -1,4 +1,8 @@
 Player/video.h
+Converter/*.mov
+Converter/*.mpeg
+Converter/*.webp
+Converter/*.mp4
 Converter/*.bin
 Converter/*.h
 Converter/package-lock.json

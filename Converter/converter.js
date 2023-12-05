@@ -1,3 +1,51 @@
+//	Arduboy Video Converter
+//	Version 1.0, December 6, 2023
+//	By Jonathan Holmes (crait)
+//
+//	Website: http://www.crait.net/
+//	Twitter: @crait (http://www.twitter.com/crait)
+//	Bluesky: @crait.bsky.social
+//
+//	The Arduboy Video Converter is used to create the a .bin file that contains the video data and metadata
+//	for a given video file, along with a video.h file that is used in the compilation of the Arduboy Video
+//	Player program with the Arduino IDE.
+//
+//	Installation:
+//		1. Download and install the Arduino IDE and required Arduboy libraries. For a guide on this, check
+//		out: https://community.arduboy.com/t/make-your-own-arduboy-game-part-1-setting-up-your-computer/7924/1
+//		You must also install the Arduboy FX library, too! https://github.com/MrBlinky/ArduboyFX
+//		2. Download and install FFmpeg onto your computer (https://ffmpeg.org/download.html)
+//		3. Download and install Node.js (https://nodejs.org/en/download)
+//		4. Using Command Prompt (or Terminal), navigate to the Converter/ directory
+//		5. Use npm to install the Arduboy Video Converter dependencies with `npm install`
+
+//	Converting Your Video:
+//		1. Place your video file in the Converter/ directory
+//		2. Using Command Prompt (or Terminal), navigate to the Converter/ directory
+//		3. Run the Arduboy Video Converter by using `npm start`
+//		4. You must provide several pieces of information for the video to be converted, such as the video
+//		filename, the height, width, FPS, etc.
+//		To skip these questions, you can use: `npm start [file] [title] [fps] [width] [height]`.
+//		5. This process will create a .bin and video.h file in the Converter/ directory
+//		6. Move the video.h file to the Player/ directory
+//		7. Open the Player.ino sketch with the Arduino IDE
+//		8. Connect your Arduboy FX to your computer and compile/upload your sketch to your device
+//		9. You must also upload the .bin that you generated in the Converter/ directory. To do this, I use
+//		Mr.Blinky's tools, but there are alernatives that you could try.
+//		(https://github.com/MrBlinky/Arduboy-Python-Utilities)
+//
+//	License:
+//		Code is supplied for 2 purposes: 1) Ease of loading onto an Arduboy device for personal
+//		play, and 2) Educational value in the case of studying the code and modifying for personal,
+//		educational use. Even though the source code is available to the public, this software is
+//		not 'open-source'. Re-releasing my code/game, re-distributing my code/game, or publicly
+//		sharing a modified variation or derivative of my code/game is not allowed. The code has no
+//		guarantee of support in the future. The code is also free of charge. This code must never
+//		be sold. This game must never be sold. Distribution of my game/code for commercial or
+//		financial gain is explicitly NOT allowed. Finally, someone creating any derivative of this
+//		software for a different platform must have explicit permission from me if it is intended
+//		to be released or distributed to others. Please don't steal my code!
+
 const application = require('./package.json')
 const fs = require('fs')
 const path = require('path')
@@ -66,38 +114,53 @@ while(video.fps <= 0) {
 	}
 }
 
-console.log(`To continue, please provide a width and height for the video file.`)
-console.log(`- If you want your video to fit the entire screen, provide a width of 128 and a height of 64.`)
-console.log(`- If you want your video to have a 16:9 aspect ratio, provide a width of 114 and a height of 64.`)
-console.log(`- If you want your video to have a 4:3 aspect ratio, provide a width of 86 and a height of 64.`)
-
-do {
-	video.width = readline.questionInt(`Width: `)
-	if(video.width > 128) {
+var validate_width = (given) => {
+	if(given > 128) {
 		console.warn(`The width cannot be greater than 128 pixels.`)
-		video.width = 0
-	} else if(video.width <= 0) {
+		given = 0
+	} else if(given <= 0) {
 		console.warn(`The width cannot be 0 or less.`)
-		video.width = 0
-	} else if(video.width % 2 != 0) {
+		given = 0
+	} else if(given % 2 != 0) {
 		console.warn(`The width must be even!`)
-		video.width = 0
+		given = 0
 	}
-} while(video.width == 0)
 
-do {
-	video.height = readline.questionInt(`Height: `)
-	if(video.height > 64) {
+	return given
+}
+
+var validate_height = (given) => {
+	if(given > 64) {
 		console.warn(`The height cannot be greater than 64 pixels.`)
-		video.height = 0
-	} else if(video.height <= 0) {
+		given = 0
+	} else if(given <= 0) {
 		console.warn(`The height cannot be 0 or less.`)
-		video.height = 0
-	} else if(video.height % 8 != 0) {
+		given = 0
+	} else if(given % 8 != 0) {
 		console.warn(`The height must be a multiple of 8, such as: 8, 16, 24, 32, 40, 48, 56, or 64`)
-		video.height = 0
+		given = 0
 	}
-} while(video.height == 0)
+
+	return given
+}
+
+video.width = process.argv[5] || 0
+video.height = process.argv[6] || 0
+
+if(validate_width(video.width) == 0 || validate_height(video.height) == 0) {
+	console.log(`To continue, please provide a width and height for the video file.`)
+	console.log(`- If you want your video to fit the entire screen, provide a width of 128 and a height of 64.`)
+	console.log(`- If you want your video to have a 16:9 aspect ratio, provide a width of 114 and a height of 64.`)
+	console.log(`- If you want your video to have a 4:3 aspect ratio, provide a width of 86 and a height of 64.`)
+}
+
+while(validate_width(video.width) == 0) {
+	video.width = readline.questionInt(`Width: `)
+}
+
+while(validate_height(video.height) == 0) {
+	video.height = readline.questionInt(`Height: `)
+}
 
 var base = path.parse(video.source).name
 video.output = base + '.bin'
@@ -114,8 +177,8 @@ if(!fs.existsSync(temp_path)) {
 console.log(``)
 console.log(`Video Title:\t${video.title}`)
 console.log(`Video FPS:\t${video.fps}`)
-console.log(`Width:\t${video.width}`)
-console.log(`Height:\t${video.height}`)
+console.log(`Width:\t\t${video.width}`)
+console.log(`Height:\t\t${video.height}`)
 console.log(``)
 console.log(`Converting ${video.source} into frames...`)
 console.log(``)
