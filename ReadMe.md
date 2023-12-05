@@ -1,4 +1,4 @@
-<img src="https://github.com/crait/Arduboy-Video-Player/blob/main/Icon.png?raw=true" width="512" />
+<img src="https://github.com/crait/Arduboy-Video-Player/blob/main/Icon.png?raw=true" />
 
 ### Created by Jonathan Holmes (crait)
 
