@@ -798,7 +798,6 @@ void setup() {
 	height = FX::readIndexedUInt16(0x0000, 2);
 	frame_count = FX::readIndexedUInt16(0x0000, 3);
 	fps = FX::readIndexedUInt16(0x0000, 4);
-	fps = 4;
 	title_length = FX::readIndexedUInt16(0x0000, 5);
 	duration_length = FX::readIndexedUInt16(0x0000, 6);
 
