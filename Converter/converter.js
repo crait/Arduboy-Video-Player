@@ -207,7 +207,7 @@ console.log(`Converting ${video.source} into frames...`)
 console.log(``)
 
 ffmpeg(video.source)
-	.videoFilters(filters)
+	.videoFilters(video.filters)
 	.size(`${video.width}x${video.height}`)
 	.outputOptions([`-r ${video.fps}`])
 	.save(temp_path + `%05d.png`)
