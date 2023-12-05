@@ -201,10 +201,9 @@ console.log(`Video Title:\t${video.title}`)
 console.log(`Video FPS:\t${video.fps}`)
 console.log(`Width:\t\t${video.width}`)
 console.log(`Height:\t\t${video.height}`)
-console.log(`Filters:\t\t${video.filters}`)
+console.log(`Filters:\t${video.filters}`)
 console.log(``)
 console.log(`Converting ${video.source} into frames...`)
-console.log(``)
 
 ffmpeg(video.source)
 	.videoFilters(video.filters)
@@ -293,7 +292,6 @@ ffmpeg(video.source)
 
 		var binary_size = fs.statSync(video.output).size
 
-		console.log(``)
 		console.log(`Creating video.h file!`)
 		var bundle = `//Generated with converter.js\n`
 		bundle += `//\n`
@@ -317,7 +315,6 @@ ffmpeg(video.source)
 		console.log(`Cleaning up...`)
 		fs.rmSync(temp_path, { recursive: true, force: true })
 
-		console.log(``)
 		console.log(`DONE!`)
 		console.log(``)
 		console.log(`Put the video.h file in the Player/ directory, then compile the Player.ino file! After, upload it to the Arduboy with the ${base}.bin file. Also, follow me on Twitter! @crait`)
