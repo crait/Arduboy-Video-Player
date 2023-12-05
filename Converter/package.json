@@ -1,0 +1,17 @@
+{
+  "name": "Arduboy Video Convter",
+  "version": "1.0.0",
+  "description": "A script to convert video files to be playable by the Arduboy Video Player",
+  "main": "converter.js",
+  "scripts": {
+    "start": "node ./converter.js"
+  },
+  "author": "Jonathan Holmes (@crait)",
+  "license": "ISC",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "jimp": "^0.22.10",
+    "readline": "^1.3.0",
+    "readline-sync": "^1.4.10"
+  }
+}

@@ -1,0 +1,824 @@
+//	Arduboy Video Player
+//	Version 1.0, December 6, 2023
+//	By Jonathan Holmes (crait)
+//
+//	Website: http://www.crait.net/
+//	Twitter: @crait (http://www.twitter.com/crait)
+//	Bluesky: @crait.bsky.social
+//
+//	The Arduboy Video Player is a simple video player for the Arduboy FX. It plays uncompressed
+//	video files that are created using the Node.js program located in the Converter/ directory.
+//	The Converter will create the a .bin file that contains the video data and metadata, as well
+//	as a .h file that must be added to the Player/ directory in order to compile this Arduino
+//	sketch file (.ino).
+//
+//	Playback Features:
+//		- Supports different video sizes and FPS
+//		- Play/pause
+//		- Skip to beginning/end
+//		- Next/previous frame
+//		- Fast-forward/rewind and backwards play
+//		- Looping
+//		- Flip video playback
+//		- Invert video colors
+//
+//	Metadata Features:
+//		- Display metadata (Title, duration, FPS, dimensions)
+//
+//	Playback Controls:
+//		A: Play/hause
+//		B: Show/hide controls bar
+//
+//	Menu Controls:
+//		Left/Right: Change button
+//		A: Select button
+//
+//	License:
+//		Code is supplied for 2 purposes: 1) Ease of loading onto an Arduboy device for personal
+//		play, and 2) Educational value in the case of studying the code and modifying for personal,
+//		educational use. Even though the source code is available to the public, this software is
+//		not 'open-source'. Re-releasing my code/game, re-distributing my code/game, or publicly
+//		sharing a modified variation or derivative of my code/game is not allowed. The code has no
+//		guarantee of support in the future. The code is also free of charge. This code must never
+//		be sold. This game must never be sold. Distribution of my game/code for commercial or
+//		financial gain is explicitly NOT allowed. Finally, someone creating any derivative of this
+//		software for a different platform must have explicit permission from me if it is intended
+//		to be released or distributed to others. Please don't steal my code!
+
+#include <Arduboy2.h>
+Arduboy2 arduboy;
+
+#include <ArduboyFX.h>
+
+#include "video.h"
+
+#define IMAGE_WIDTH		16
+#define IMAGE_HEIGHT	16
+#define FRAMERATE		VIDEO_FRAMERATE
+
+const unsigned char title_screen[] PROGMEM {
+	0xff, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0xe1, 0xf1, 0xf9, 0x7d, 0x3d, 0x3d, 0x3d, 0x3d,
+	0x79, 0x79, 0xf1, 0xf1, 0xe1, 0xc1, 0x81, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x81,
+	0xc1, 0xe1, 0xf1, 0xf9, 0x79, 0x7d, 0x3d, 0x3d,
+	0x3d, 0x3d, 0x7d, 0xf9, 0xf1, 0xe1, 0x81, 0x01,
+	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xc0, 0xc0, 0xc0, 0x40, 0x40, 0x40, 0xc0, 0xc0,
+	0xc0, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+	0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00,
+	0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0x00, 0x80,
+	0x80, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
+	0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x00,
+	0x00, 0x00, 0x80, 0x80, 0x00, 0x00, 0x80, 0x80,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0xff,
+	0xff, 0xff, 0x3f, 0x00, 0x00, 0x00, 0x00, 0xf0,
+	0xf0, 0xe0, 0xc0, 0x81, 0x03, 0x07, 0x0f, 0x1f,
+	0x3e, 0x7c, 0xf8, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
+	0xf0, 0xf0, 0xf0, 0xf8, 0x7c, 0x3e, 0x1f, 0x0f,
+	0x07, 0x03, 0x81, 0xc0, 0xe0, 0xf0, 0xf8, 0xf0,
+	0xe0, 0x00, 0x00, 0x03, 0x1f, 0xff, 0xff, 0xfe,
+	0xf8, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x7f, 0x41, 0x40, 0x76, 0x77, 0x76, 0x40, 0x41,
+	0x7f, 0x00, 0x3f, 0x3f, 0x04, 0x0c, 0x1c, 0x37,
+	0x23, 0x00, 0x3f, 0x3f, 0x20, 0x20, 0x31, 0x1f,
+	0x0e, 0x00, 0x1f, 0x3f, 0x20, 0x20, 0x20, 0x3f,
+	0x1f, 0x00, 0x3f, 0x3f, 0x24, 0x24, 0x24, 0x3f,
+	0x1b, 0x00, 0x0e, 0x1f, 0x31, 0x20, 0x31, 0x1f,
+	0x0e, 0x00, 0x03, 0x07, 0x3c, 0x3c, 0x07, 0x03,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0xff, 0xff,
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x3f, 0x7f,
+	0x3f, 0x1f, 0x0f, 0x07, 0x03, 0x02, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04,
+	0x0e, 0x1f, 0x3f, 0x3f, 0x1f, 0x0f, 0x07, 0x03,
+	0x3f, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff,
+	0xff, 0xff, 0xe0, 0xc0, 0x80, 0x00, 0x00, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xfe, 0xc2, 0x82, 0x3e, 0x7e, 0x3e, 0x82, 0xc2,
+	0xfe, 0x00, 0x04, 0x04, 0xfc, 0xfc, 0x04, 0x04,
+	0x00, 0xfc, 0xfc, 0x04, 0x04, 0x8c, 0xf8, 0x70,
+	0x00, 0xfc, 0xfc, 0x24, 0x24, 0x24, 0x24, 0x04,
+	0x00, 0x70, 0xf8, 0x8c, 0x04, 0x8c, 0xf8, 0x70,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0xe0, 0xf8, 0xfe, 0xff, 0xff, 0x3f,
+	0x0f, 0x03, 0x01, 0x00, 0x00, 0x00, 0xc0, 0xf0,
+	0xf8, 0x7c, 0x3c, 0xbc, 0xbc, 0x3c, 0x7c, 0xf8,
+	0xf0, 0xc0, 0x00, 0x00, 0x00, 0xc0, 0xe0, 0xf0,
+	0xf8, 0x78, 0x3c, 0x3c, 0xbc, 0xbc, 0x3c, 0x7c,
+	0xf8, 0xf0, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x0f, 0x3f, 0x7f, 0xff, 0xfc, 0xf0, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0xf3, 0x13, 0x13, 0xd3, 0xd2, 0xd3, 0x13, 0x33,
+	0xf3, 0x00, 0xe1, 0xe1, 0x01, 0x01, 0x01, 0x01,
+	0x00, 0x01, 0x81, 0xc1, 0x61, 0x21, 0x60, 0xc0,
+	0x80, 0x01, 0xe1, 0xe1, 0x01, 0x01, 0xe1, 0xe1,
+	0x00, 0xe0, 0xe0, 0x21, 0x21, 0x21, 0x20, 0x20,
+	0x00, 0xe0, 0xe0, 0x20, 0x20, 0x20, 0xe0, 0xc0,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0xff, 0xff, 0xff, 0xff, 0x07, 0x00, 0x00,
+	0xe0, 0xf0, 0xf0, 0xf8, 0xf8, 0xf8, 0xff, 0xff,
+	0xf0, 0xe0, 0xe0, 0xe1, 0xe3, 0xe3, 0xf0, 0xff,
+	0xff, 0xff, 0xf8, 0xf0, 0xf8, 0xff, 0xff, 0xff,
+	0xff, 0xf0, 0xe0, 0xe0, 0xe3, 0xe3, 0xe3, 0xf0,
+	0xff, 0xff, 0xff, 0xfc, 0xfc, 0xfc, 0xf8, 0xf8,
+	0xf8, 0xf8, 0xf8, 0xf8, 0xf0, 0xf0, 0xc0, 0x80,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x0f, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x1f, 0x10, 0x10, 0x1d, 0x1d, 0x1d, 0x1c, 0x1e,
+	0x1f, 0x00, 0x0f, 0x0f, 0x08, 0x08, 0x08, 0x08,
+	0x08, 0x00, 0x0f, 0x0f, 0x02, 0x02, 0x02, 0x0f,
+	0x0f, 0x00, 0x00, 0x01, 0x0f, 0x0f, 0x01, 0x00,
+	0x00, 0x0f, 0x0f, 0x09, 0x09, 0x09, 0x09, 0x08,
+	0x00, 0x0f, 0x0f, 0x01, 0x03, 0x07, 0x0d, 0x08,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0,
+	0xf8, 0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xc3, 0x00, 0x3d, 0xff, 0xe1, 0xc5, 0x87, 0x07,
+	0x07, 0x07, 0x85, 0xc1, 0xe1, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f, 0x0f,
+	0x0f, 0xcf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x1f,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0xe0, 0xfc, 0xff, 0xff,
+	0xff, 0x1f, 0x07, 0x01, 0x01, 0x00, 0x80, 0x80,
+	0x01, 0x03, 0x0f, 0x3f, 0x3f, 0x7f, 0xff, 0xff,
+	0xff, 0xfe, 0xf8, 0xf8, 0xf1, 0xc1, 0x01, 0x31,
+	0x30, 0x31, 0x31, 0x33, 0x13, 0x03, 0xc3, 0xc3,
+	0xc3, 0xc3, 0xe3, 0xe1, 0xf1, 0xf8, 0xf8, 0xfe,
+	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	0xff, 0x7f, 0x3f, 0x1f, 0x0f, 0x07, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0x82, 0xba, 0xba, 0xfe, 0x82, 0xca, 0xa2,
+	0xfe, 0x82, 0xea, 0x82, 0xfe, 0xba, 0x82, 0xba,
+	0xfe, 0xfa, 0x82, 0xfa, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xff, 0xff, 0xff, 0x9f, 0x83,
+	0x80, 0x80, 0x80, 0x80, 0xf0, 0xfc, 0xff, 0xff,
+	0xfe, 0xfc, 0xf0, 0xe0, 0xc0, 0x80, 0x81, 0x81,
+	0x81, 0x83, 0x87, 0x87, 0x8f, 0x8f, 0x8f, 0x9e,
+	0x9e, 0xfe, 0xfe, 0xfe, 0xfe, 0xff, 0xff, 0xff,
+	0xff, 0xff, 0x9f, 0x9f, 0x8f, 0x8f, 0x8f, 0x8f,
+	0x8f, 0x8f, 0xc7, 0xc7, 0xc7, 0xc3, 0xe1, 0xe1,
+	0xf0, 0xf0, 0xf8, 0xfc, 0xfe, 0xfe, 0xfe, 0xfe,
+	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xff,
+};
+
+const unsigned char me[] PROGMEM = {
+	0x45, 0x8a, 0x15, 0xaa, 0x15, 0xaa, 0xd5, 0x6a, 0x34, 0x28, 0x21, 0x32, 0x1d, 0x0a, 0x0c, 0x06, 0x03, 0x02, 0x07, 0x02, 0x23, 0x41, 0xa0, 0x41, 0x80, 0x40, 0x81, 0x40, 0x20, 0x80, 0x40, 0x80,
+	0x40, 0x20, 0x08, 0xc7, 0x7d, 0xa2, 0x55, 0xa2, 0x51, 0xa8, 0x15, 0x88, 0x44, 0xa2, 0x51, 0xaa, 0x54, 0xa8, 0x51, 0x82, 0x05, 0xff, 0x00, 0x00, 0x41, 0x80, 0x80, 0x00, 0x80, 0xe0, 0xf0, 0xf0,
+	0xf0, 0xf0, 0xe0, 0x60, 0x60, 0x60, 0x68, 0xed, 0xe4, 0xe3, 0xe0, 0xe0, 0x61, 0x72, 0xe1, 0x02, 0xe1, 0x32, 0x1a, 0xaf, 0x11, 0x88, 0x54, 0x8a, 0x45, 0x2a, 0x05, 0x92, 0x45, 0xa2, 0x41, 0xa0,
+	0x55, 0xaa, 0x55, 0xaa, 0x55, 0xbf, 0xe0, 0x00, 0x00, 0x00, 0x00, 0x3c, 0xfe, 0xff, 0xff, 0xff, 0x1d, 0xec, 0x36, 0x37, 0xf7, 0xf7, 0xee, 0x1f, 0xff, 0x3f, 0xdf, 0x2e, 0x37, 0xf6, 0xee, 0x1c,
+	0x03, 0x7e, 0x55, 0xca, 0xc5, 0xa2, 0x51, 0xa8, 0x54, 0xaa, 0x55, 0x2a, 0x15, 0x8a, 0x45, 0x22, 0x51, 0xa2, 0x54, 0xa0, 0x55, 0xfe, 0xc3, 0xbc, 0x66, 0x40, 0x00, 0x38, 0xdf, 0x7f, 0xbf, 0xff,
+	0xff, 0xfe, 0x7d, 0x7d, 0x7d, 0xfd, 0xfe, 0x3f, 0x7f, 0xff, 0xf0, 0x6d, 0x1d, 0xbd, 0xfe, 0xff, 0xe0, 0x83, 0x3f, 0xc0, 0x7f, 0xa2, 0x55, 0xa2, 0x51, 0x28, 0x04, 0xa2, 0x51, 0xa8, 0x54, 0xaa,
+	0x11, 0xa2, 0x15, 0xa2, 0xc5, 0x6a, 0x45, 0x63, 0x41, 0x6b, 0x5e, 0x78, 0x71, 0xa6, 0x4b, 0x8d, 0x97, 0x9c, 0x38, 0x31, 0x23, 0x06, 0x46, 0x4d, 0x4d, 0x6d, 0x72, 0x7f, 0x6f, 0x1f, 0x37, 0x0f,
+	0x1d, 0xcb, 0xe0, 0x7f, 0x55, 0x6a, 0x45, 0x40, 0xc0, 0x8a, 0xc5, 0x6a, 0xb5, 0xda, 0xed, 0xca, 0x3d, 0xce, 0xf3, 0xfd, 0xfe, 0xf8, 0x87, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xc0, 0xbf, 0xbe, 0xbd,
+	0xdb, 0x57, 0xa7, 0xcf, 0xb7, 0x8b, 0xfa, 0xf6, 0x76, 0xa6, 0xca, 0x76, 0xea, 0x9c, 0x5f, 0xdf, 0xc0, 0xfe, 0xfe, 0xff, 0xff, 0xff, 0xff, 0x0f, 0xb6, 0xb9, 0xfb, 0xf8, 0xf3, 0xf7, 0xff, 0xf8
+};
+
+const unsigned char button_back[] PROGMEM {
+	0x7f, 0x41, 0x77, 0x63, 0x41, 0x77, 0x63, 0x41, 0x7f,
+};
+const unsigned char button_reverse[] PROGMEM {
+	0x7f, 0x77, 0x63, 0x41, 0x77, 0x63, 0x41, 0x7f,
+};
+const unsigned char button_backstep[] PROGMEM {
+	0x7f, 0x77, 0x63, 0x41, 0x7f, 0x41, 0x7f,
+};
+const unsigned char button_play[] PROGMEM {
+	0x7f, 0x41, 0x41, 0x63, 0x63, 0x77, 0x7f,
+};
+const unsigned char button_pause[] PROGMEM {
+	0x7f, 0x41, 0x41, 0x7f, 0x41, 0x41, 0x7f,
+};
+const unsigned char button_step[] PROGMEM {
+	0x7f, 0x41, 0x7f, 0x41, 0x63, 0x77, 0x7f,
+};
+const unsigned char button_fastforward[] PROGMEM {
+	0x7f, 0x41, 0x63, 0x77, 0x41, 0x63, 0x77, 0x7f,
+};
+const unsigned char button_end[] PROGMEM {
+	0x7f, 0x41, 0x63, 0x77, 0x41, 0x63, 0x77, 0x41, 0x7f,
+};
+const unsigned char button_loop[] PROGMEM {
+	0x7f, 0x63, 0x5d, 0x5d, 0x6b, 0x77, 0x6b, 0x5d, 0x5d, 0x63, 0x7f,
+};
+const unsigned char button_no_loop[] PROGMEM {
+	0x7f, 0x7b, 0x75, 0x5d, 0x6f, 0x77, 0x7b, 0x5d, 0x57, 0x6f, 0x7f,
+};
+const unsigned char button_view[] PROGMEM {
+	0x7f, 0x6b, 0x5d, 0x55, 0x5d, 0x6b, 0x7f,
+};
+const unsigned char button_info[] PROGMEM {
+	0x7f, 0x5f, 0x45, 0x45, 0x7f,
+};
+const unsigned char button_exit[] PROGMEM {
+	0x7f, 0x5d, 0x6b, 0x77, 0x6b, 0x5d, 0x7f,
+};
+
+
+void draw_bitmap(int16_t x, int16_t y, uint24_t address, int16_t width, int16_t height, uint8_t mode = dbmNormal) {
+	if(x + width <= 0 || x >= WIDTH || y + height <= 0 || y >= HEIGHT) return;
+	
+	int16_t frame = 0;
+
+	FX::seekData(address);
+	FX::readPendingUInt16();
+	FX::readPendingLastUInt16();
+
+	int16_t skipleft = 0;
+	uint8_t renderwidth;
+	if(x < 0) {
+		skipleft = -x;
+		if (width - skipleft < WIDTH) renderwidth = width - skipleft;
+		else renderwidth = WIDTH;
+	} else {
+		if(x + width > WIDTH) renderwidth = WIDTH - x;
+		else renderwidth = width;
+	}
+
+	int16_t skiptop;	
+	int8_t renderheight;
+	if(y < 0) {
+		skiptop = -y & -8;
+		if (height - skiptop <= HEIGHT) renderheight = height - skiptop;
+		else renderheight = HEIGHT + (-y & 7);
+		skiptop = FX::fastDiv8(skiptop);
+	} else {
+		skiptop = 0;
+		if (y + height > HEIGHT) renderheight = HEIGHT - y;
+		else renderheight = height;
+	}
+
+	uint24_t offset = (uint24_t)(frame * (FX::fastDiv8(height+(uint16_t)7)) + skiptop) * width + skipleft;
+	if(mode & dbmMasked) {
+		offset += offset;
+		width += width;
+	}
+	address += offset;
+	int8_t displayrow = (y >> 3) + skiptop;
+	uint16_t displayoffset = displayrow * WIDTH + x + skipleft;
+	if(mode & dbmFlip) displayoffset += renderwidth - 1;
+	uint8_t yshift = FX::bitShiftLeftUInt8(y);
+	#ifdef ARDUINO_ARCH_AVR
+	uint8_t rowmask;
+	uint16_t bitmap;
+	asm volatile(
+		"1:	;render_row:								\n"
+		"	cbi		%[fxport],			%[fxbit]		\n"
+		"	ldi		r24,				%[cmd]			\n" // writeByte(SFC_READ);
+		"	out		%[spdr],			r24				\n"
+		"	lds		r24,				%[datapage]+0	\n" // address + programDataPage;
+		"	lds		r25,				%[datapage]+1	\n"
+		"	add		r24,				%B[address]		\n"
+		"	adc		r25,				%C[address]		\n"
+		"	in		 r0,				%[spsr]			\n" // wait()
+		"	sbrs	r0,					%[spif]			\n"
+		"	rjmp	.-6									\n"
+		"	out		%[spdr],			r25				\n" // writeByte(address >> 16);
+		"	in		 r0,				%[spsr]			\n" // wait()
+		"	sbrs	r0,					%[spif]			\n"
+		"	rjmp	.-6									\n"
+		"	out		%[spdr],			r24				\n" // writeByte(address >> 8);
+		"	in		 r0,				%[spsr]			\n" // wait()
+		"	sbrs	r0,					%[spif]			\n"
+		"	rjmp	.-6									\n"
+		"	out		%[spdr],			%A[address]		\n" // writeByte(address);
+		"												\n"
+		"	add		%A[address],		%A[width]		\n" // address += width;
+		"	adc		%B[address],		%B[width]		\n"
+		"	adc		%C[address],		r1				\n"
+		"	in		 r0,				%[spsr]			\n" // wait();
+		"	sbrs	r0,					%[spif]			\n"
+		"	rjmp	.-6									\n"
+		"	out		%[spdr],			r1				\n" // SPDR = 0;
+		"												\n"
+		"	lsl		%[mode]								\n" // 'clear' mode dbfExtraRow by shifting into carry
+		"	cpi		%[displayrow],		%[lastrow]		\n"
+		"	brge	.+4									\n" // row >= lastrow, clear carry
+		"	sec											\n" // row < lastrow set carry
+		"	sbrc	%[yshift],			0				\n" // yshift != 1, don't change carry state
+		"	clc											\n" // yshift == 1, clear carry
+		"	ror		%[mode]								\n" // carry to mode dbfExtraRow
+		"												\n"
+		"	ldi		%[rowmask],			0x02			\n" // rowmask = 0xFF >> (8 - (height & 7));
+		"	sbrc	%[renderheight],	1				\n"
+		"	ldi		%[rowmask],			0x08			\n"
+		"	sbrc	%[renderheight],	2				\n"
+		"	swap	%[rowmask]							\n"
+		"	sbrs	%[renderheight],	0				\n"
+		"	lsr		%[rowmask]							\n"
+		"	dec		%[rowmask]							\n"
+		"	breq	.+4									\n"
+		"	cpi		%[renderheight],	8				\n" // if (renderheight >= 8) rowmask = 0xFF;
+		"	brlt	.+2									\n"
+		"	ldi		%[rowmask],			0xFF			\n"
+		"												\n"
+		"	mov		r25,				%[renderwidth]	\n" // for (c < renderwidth)
+		"2:	;render_column:								\n"
+		"	in		 r0,				%[spdr]			\n" // read bitmap data
+		"	out		%[spdr],			r1				\n" // start next read
+		"												\n"
+		"	sbrc	%[mode],			%[reverseblack]	\n" // test reverse mode
+		"	eor		r0,					%[rowmask]		\n" // reverse bitmap data
+		"	mov		r24,				%[rowmask]		\n" // temporary move rowmask
+		"	sbrc	%[mode],			%[whiteblack]	\n" // for black and white modes:
+		"	mov		r24,				r0				\n" // rowmask = bitmap
+		"	sbrc	%[mode],			%[black]		\n" // for black mode:
+		"	clr		r0									\n" // bitmap = 0
+		"	mul		r0,					%[yshift]		\n"
+		"	movw	%[bitmap],			r0				\n" // bitmap *= yshift
+		"	bst		%[mode],			%[masked]		\n" // if bitmap has no mask:
+		"	brtc	3f ;render_mask						\n" // skip next part
+		"												\n"
+		"	lpm											\n" // above code took 11 cycles, wait 7 cycles more for SPI data ready
+		"	lpm											\n"
+		"	clr		r1									\n" // restore zero reg
+		"												\n"
+		"	in		 r0,				%[spdr]			\n" // read mask data
+		"	out		%[spdr],			r1				\n" // start next read
+		"	sbrc	%[mode],			%[whiteblack]	\n" //
+		"3:	;render_mask:								\n"
+		"	mov		r0,					r24				\n" // get mask in r0
+		"	mul		r0,					%[yshift]		\n" // mask *= yshift
+		";render_page0:									\n"
+		"	cpi		%[displayrow],		0				\n" // skip if displayrow < 0
+		"	brlt	4f ;render_page1					\n"
+		"												\n"
+		"	ld		 r24,				%a[buffer]		\n" // do top row or to row half
+		"	sbrs	%[mode],			%[invert]		\n" // skip 1st eor for invert mode
+		"	eor		%A[bitmap],			r24				\n"
+		"	and		%A[bitmap],			r0				\n" // and with mask LSB
+		"	eor		%A[bitmap],			r24				\n"
+		"	st		 %a[buffer],		%A[bitmap]		\n"
+		"4:	;render_page1:								\n"
+		"	subi	%A[buffer],			lo8(-%[dwidth])	\n"
+		"	sbci	%B[buffer],			hi8(-%[dwidth])	\n"
+		"	sbrs	%[mode],			%[extrarow]		\n" // test if ExtraRow mode:
+		"	rjmp	5f ;render_next						\n" // else skip
+		"												\n"
+		"	ld		r24,				%a[buffer]		\n" // do shifted 2nd half
+		"	sbrs	%[mode],			%[invert]		\n" // skip 1st eor for invert mode
+		"	eor		%B[bitmap],			r24				\n"
+		"	and		%B[bitmap],			r1				\n"// and with mask MSB
+		"	eor		%B[bitmap],			r24				\n"
+		"	st		%a[buffer],			%B[bitmap]		\n"
+		"5:	;render_next:								\n"
+		"	clr		r1									\n" // restore zero reg
+		"	sbrc	%[mode],			5				\n" // flip mode:
+		"	subi	%A[buffer],			lo8(%[dwidth]+1)\n" // buffer -= WIDTH + 1
+		"	sbrs	%[mode],			5				\n" // else
+		"	subi	%A[buffer],			lo8(%[dwidth]-1)\n" // buffer -= WIDTH - 1
+		"	sbc		%B[buffer],			r1				\n"
+		"	dec		r25									\n"
+		"	brne	2b ;render_column					\n" // for (c < renderheigt) loop
+		"												\n"
+		"	mov		r24,				%[renderwidth]	\n"
+		"	sbrs	%[mode],			5				\n" // flip:	+ renderwidth + WIDTH
+		"	neg		r24									\n" // no flip: - renderwidth + WIDTH
+		"	subi	r24,				lo8(-%[dwidth])	\n"
+		"	add		%A[buffer],			r24				\n" // buffer += WIDTH +/- renderwidth
+		"	adc		%B[buffer],			r1				\n"
+		"	subi	%[renderheight],	8				\n" // reinderheight -= 8
+		"	inc		%[displayrow]						\n" // displayrow++
+		"	in		 r0,				%[spsr]			\n" // clear SPI status
+		"	sbi		%[fxport],			%[fxbit]		\n" // disable external flash
+		"	cp		 r1,				%[renderheight]	\n" // while (renderheight > 0)
+		"	brge	.+2									\n"
+		"	rjmp	1b ;render_row						\n"
+	:
+		[address]		"+r"	(address),
+		[mode]			"+r"	(mode),
+		[rowmask]		"=&d"	(rowmask),
+		[bitmap]		"=&r"	(bitmap),
+		[renderheight]	"+d"	(renderheight),
+		[displayrow]	"+d"	(displayrow)
+	:
+		[width]			"r"		(width),
+		[height]		"r"		(height),
+		[yshift]		"r"		(yshift),
+		[renderwidth]	"r"		(renderwidth),
+		[buffer]		"e"		(Arduboy2Base::sBuffer + displayoffset),
+
+		[fxport]		"I"		(_SFR_IO_ADDR(FX_PORT)),
+		[fxbit]			"I"		(FX_BIT),
+		[cmd]			"I"		(SFC_READ),
+		[spdr]			"I"		(_SFR_IO_ADDR(SPDR)),
+		[datapage]		""		(&FX::programDataPage),
+		[spsr]			"I"		(_SFR_IO_ADDR(SPSR)),
+		[spif]			"I"		(SPIF),
+		[lastrow]		"I"		(HEIGHT / 8 - 1),
+		[dwidth]		""		(WIDTH),
+		[reverseblack]	"I"		(dbfReverseBlack),
+		[whiteblack]	"I"		(dbfWhiteBlack),
+		[black]			"I"		(dbfBlack),
+		[masked]		"I"		(dbfMasked),
+		[invert]		"I"		(dbfInvert),
+		[extrarow]		"I"		(dbfExtraRow)
+	:
+		"r24",	"r25"
+	);
+	#else
+	uint8_t lastmask = bitShiftRightMaskUInt8(8 - height);
+	do {
+		seekData(address);
+		address += width;
+		mode &= ~((1 << dbfExtraRow));
+		if (yshift != 1 && displayrow < (HEIGHT / 8 - 1)) mode |= (1 << dbfExtraRow);
+		uint8_t rowmask = 0xFF;
+		if (renderheight < 8) rowmask = lastmask;
+		wait();
+		for (uint8_t c = 0; c < renderwidth; c++)
+		{
+		uint8_t bitmapbyte = readUnsafe();
+		if (mode & (1 << dbfReverseBlack)) bitmapbyte ^= rowmask;
+		uint8_t maskbyte = rowmask;
+		if (mode & (1 << dbfWhiteBlack)) maskbyte = bitmapbyte;
+		if (mode & (1 << dbfBlack)) bitmapbyte = 0;
+		uint16_t bitmap = multiplyUInt8(bitmapbyte, yshift);
+		if (mode & (1 << dbfMasked))
+		{
+			wait();
+			uint8_t tmp = readUnsafe();
+			if ((mode & dbfWhiteBlack) == 0) maskbyte = tmp;
+		}
+		uint16_t mask = multiplyUInt8(maskbyte, yshift);
+		if (displayrow >= 0)
+		{
+			uint8_t pixels = bitmap;
+			uint8_t display = Arduboy2Base::sBuffer[displayoffset];
+			if ((mode & (1 << dbfInvert)) == 0) pixels ^= display;
+			pixels &= mask;
+			pixels ^= display;
+			Arduboy2Base::sBuffer[displayoffset] = pixels;
+		}
+		if (mode & (1 << dbfExtraRow))
+		{
+			uint8_t display = Arduboy2Base::sBuffer[displayoffset + WIDTH];
+			uint8_t pixels = bitmap >> 8;
+			if ((mode & dbfInvert) == 0) pixels ^= display;
+			pixels &= mask >> 8;
+			pixels ^= display;
+			Arduboy2Base::sBuffer[displayoffset + WIDTH] = pixels;
+		}
+		(mode & (1 << dbfFlip)) ? displayoffset-- : displayoffset++;
+		}
+		displayoffset += WIDTH;
+		(mode & (1 << dbfFlip)) ?	displayoffset += renderwidth : displayoffset -= renderwidth;
+		displayrow ++;
+		renderheight -= 8;
+		readEnd();
+	} while (renderheight > 0);
+	#endif
+}
+
+
+#define STATE_CREDITS			0
+#define STATE_TITLE				1
+#define STATE_VIDEO				2
+uint8_t gamestate = STATE_CREDITS;
+
+#define PLAY_BUTTON		3
+#define LOOP_BUTTON		7
+
+struct Button {
+	const uint8_t x;
+	const unsigned char* image;
+	const uint8_t width;
+	void (*click)();
+};
+
+uint24_t video_address = 12;
+uint24_t frame = 0;
+uint16_t encoding = 0;
+uint16_t width = 0;
+uint16_t height = 0;
+uint16_t fps = 0;
+uint16_t frame_count = 0;
+uint16_t title_length = 0;
+uint16_t duration_length = 0;
+char title[20];
+char duration[20];
+
+#define TOOLBAR_HEIGHT	15
+#define INFO_OFFSET_MAX	50
+bool looping = false;
+bool show_bar = true;
+short toolbar_offset = 0;
+bool show_info = false;
+short info_offset = 0;
+short play_speed = 1;
+uint8_t selected_item = PLAY_BUTTON;
+
+#define MODES_COUNT			4
+const uint8_t display_modes[] = {
+	dbmNormal,
+	dbmReverse,
+	dbmFlip,
+	dbmReverse | dbmFlip
+};
+uint8_t display_mode = 0;
+
+#define BUTTON_COUNT		11
+Button buttons[] = {
+	{ 0, button_back, 9, [](){
+		frame = 0;
+		play_speed = 0;
+	} },
+	{ 10, button_reverse, 8, [](){
+		switch(play_speed) {
+			case -1:
+				play_speed = -2;
+				break;
+			case -2:
+				play_speed = -4;
+				break;
+			default:
+				play_speed = -1;
+				break;
+		}
+	} },
+	{ 19, button_backstep, 7, [](){
+		if(frame == 0 && looping) {
+			frame = frame_count - 1;
+		} else {
+			frame--;
+		}
+		play_speed = 0;
+	} },
+	{ 27, button_play, 7, [](){
+		if(play_speed == 0) {
+			play_speed = 1;
+		} else {
+			play_speed = 0;
+		}
+	} },
+	{ 35, button_step, 7, [](){
+		frame++;
+		play_speed = 0;
+	} },
+	{ 43, button_fastforward, 8, [](){
+		switch(play_speed) {
+			case 2:
+				play_speed = 4;
+				break;
+			case -1:
+			case -2:
+			case -4:
+				play_speed = 1;
+				break;
+			default:
+				play_speed = 2;
+				break;
+		}
+	} },
+	{ 52, button_end, 9, [](){
+		frame = frame_count - 1;
+		play_speed = 0;
+	} },
+	{ 92, button_loop, 11, [](){
+		looping = !looping;
+	} },
+	{ 104, button_view, 7, [](){
+		display_mode++;
+		if(display_mode >= MODES_COUNT) {
+			display_mode = 0;
+		}
+	} },
+	{ 112, button_info, 5, [](){
+		show_info = true;
+	} },
+	{ 118, button_exit, 7, [](){
+		show_bar = false;
+	} }
+};
+
+void show_credits() {
+	arduboy.drawBitmap(8, 8, me, 48, 48, WHITE);
+
+	arduboy.setCursor(75, 8);
+	arduboy.print(F("Jonathan"));
+	arduboy.setCursor(87, 18);
+	arduboy.print(F("Holmes"));
+	arduboy.setCursor(86, 38);
+	arduboy.print(F("@crait"));
+	arduboy.setCursor(68, 49);
+	arduboy.print(F("crait.net"));
+
+	if(arduboy.justReleased(A_BUTTON)) {
+		gamestate = STATE_TITLE;
+	}
+}
+
+uint8_t title_transition = 0;
+
+void show_title() {
+	arduboy.drawBitmap(0, 0 - title_transition, title_screen, 128, 64, WHITE);
+	
+	if(arduboy.justReleased(A_BUTTON)) {
+		gamestate = STATE_VIDEO;
+	}
+}
+
+void show_video() {
+	if(play_speed == 0) {
+		buttons[PLAY_BUTTON].image = button_play;
+	} else {
+		buttons[PLAY_BUTTON].image = button_pause;
+	}
+
+	if(looping) {
+		buttons[LOOP_BUTTON].image = button_no_loop;
+	} else {
+		buttons[LOOP_BUTTON].image = button_loop;
+	}
+
+	draw_bitmap(WIDTH / 2 - width / 2, HEIGHT / 2 - height / 2 - toolbar_offset / 2, video_address + (width * height) / 8 * frame, width, height, display_modes[display_mode]);
+
+	arduboy.fillRect(0, HEIGHT - toolbar_offset, WIDTH, toolbar_offset, BLACK);
+	arduboy.drawRect(0, HEIGHT - toolbar_offset + 1, WIDTH, 5, WHITE);
+	arduboy.fillRect(0, HEIGHT - toolbar_offset + 1, WIDTH * (frame / double(frame_count)), 5, WHITE);
+	for(unsigned char i = 0; i < BUTTON_COUNT; i++) {
+		arduboy.drawBitmap(buttons[i].x, HEIGHT - toolbar_offset + 7, buttons[i].image, buttons[i].width, 8, WHITE);
+	}
+	arduboy.drawRect(buttons[selected_item].x, HEIGHT - toolbar_offset + 7, buttons[selected_item].width, 8, WHITE);
+
+	if(info_offset > 0) {
+		uint8_t w = max(max(7, title_length), duration_length) * (5);
+		uint8_t x = WIDTH / 2 - w / 2;
+
+		arduboy.fillRect(x - 10, HEIGHT / 2 - info_offset / 2, w + 20, info_offset, BLACK);
+		arduboy.drawRect(x - 10, HEIGHT / 2 - info_offset / 2, w + 20, info_offset, WHITE);
+		arduboy.drawRect(x - 10 - 1, HEIGHT / 2 - info_offset / 2 - 1, w + 20 + 2, info_offset + 2, BLACK);
+
+		uint8_t y = HEIGHT / 2 - info_offset / 2 + 9;
+		if(info_offset >= INFO_OFFSET_MAX) {
+			arduboy.setCursor(x, y);
+			arduboy.print(title);
+
+			y += 10;
+			arduboy.setCursor(x, y);
+			arduboy.print(duration);
+
+			y += 10;
+			arduboy.setCursor(x, y);
+			arduboy.print(width);
+			arduboy.print(F("x"));
+			arduboy.print(height);
+			
+			y += 10;
+			arduboy.setCursor(x, y);
+			arduboy.print(fps);
+			arduboy.print(F("FPS"));
+		}
+	}
+
+	if(show_info) {
+		if(info_offset < INFO_OFFSET_MAX) {
+			info_offset += 6;
+		} else {
+			if(arduboy.justReleased(A_BUTTON) || arduboy.justReleased(B_BUTTON)) {
+				show_info = false;
+			}
+		}
+	} else {
+		if(info_offset > 0) {
+			info_offset -= 6;
+		}
+	}
+
+	if(show_bar) {
+		if(toolbar_offset < TOOLBAR_HEIGHT) {
+			toolbar_offset++;
+		} else {
+			if(info_offset == 0) {
+				if(arduboy.justReleased(B_BUTTON)) {
+					show_bar = false;
+				} else if(arduboy.justReleased(LEFT_BUTTON)) {
+					if(selected_item >= 1) {
+						selected_item--;
+					}
+				} else if(arduboy.justReleased(RIGHT_BUTTON)) {
+					if(selected_item < BUTTON_COUNT - 1) {
+						selected_item++;
+					}
+				} else if(arduboy.justReleased(A_BUTTON)) {
+					buttons[selected_item].click();
+					arduboy.fillRect(buttons[selected_item].x - 1, HEIGHT - toolbar_offset + 7 - 1, buttons[selected_item].width + 2, 8 + 2, WHITE);
+				}
+			}
+		}
+	} else {
+		if(toolbar_offset > 0) {
+			toolbar_offset--;
+		} else {
+			if(arduboy.justReleased(B_BUTTON)) {
+				show_bar = true;
+				selected_item = PLAY_BUTTON;
+			} else if(arduboy.justReleased(A_BUTTON)) {
+				if(play_speed == 0) {
+					play_speed = 1;
+				} else {
+					play_speed = 0;
+				}
+			}
+		}
+	}
+
+	if(play_speed > 0) {
+		frame += play_speed;
+	} else if(play_speed < 0) {
+		if(looping && (frame < (0 - play_speed))) {
+			frame = frame_count;
+		} else {
+			frame += play_speed;
+		}
+	}
+
+	if(looping) {
+		if(frame >= frame_count) {
+			frame = 0;
+		}
+	} else {
+		if(frame >= frame_count) {
+			frame = frame_count - 1;
+		}
+	}
+	
+	
+	if(title_transition <= 64) {
+		arduboy.fillRect(0, 0 - title_transition, 128, 64, BLACK);
+		arduboy.drawBitmap(0, 0 - title_transition, title_screen, 128, 64, WHITE);
+
+		title_transition += 3;
+		if(title_transition >= 64) {
+			title_transition = 64;
+		}
+	}
+}
+
+void setup() {
+	arduboy.begin();
+	FX::begin(FX_DATA_PAGE);
+
+	encoding = FX::readIndexedUInt16(0x0000, 0);
+	width = FX::readIndexedUInt16(0x0000, 1);
+	height = FX::readIndexedUInt16(0x0000, 2);
+	frame_count = FX::readIndexedUInt16(0x0000, 3);
+	fps = FX::readIndexedUInt16(0x0000, 4);
+	title_length = FX::readIndexedUInt16(0x0000, 5);
+	duration_length = FX::readIndexedUInt16(0x0000, 6);
+
+	FX::readDataBytes(0x000E, title, 20);
+	FX::readDataBytes(0x000E + (title_length), duration, 20);
+
+	video_address += title_length + duration_length + 2;
+
+	arduboy.setFrameRate(fps);
+}
+
+void loop() {
+	if(!arduboy.nextFrame()) {
+		return;
+	}
+
+	arduboy.pollButtons();
+	arduboy.clear();
+
+	switch(gamestate) {
+		case STATE_CREDITS:
+			show_credits();
+			break;
+		case STATE_TITLE:
+			show_title();
+			break;
+		case STATE_VIDEO:
+			show_video();
+			break;
+	}
+
+	FX::display(CLEAR_BUFFER);
+}

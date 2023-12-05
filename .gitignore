@@ -1,0 +1,6 @@
+Player/video.h
+Converter/*.bin
+Converter/*.h
+Converter/package-lock.json
+Converter/temp/
+Converter/node_modules/
