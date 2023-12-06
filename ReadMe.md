@@ -1,4 +1,4 @@
-<img src="https://github.com/crait/Arduboy-Video-Player/blob/main/Icon.png?raw=true" />
+<img style="height: 200px;" src="https://github.com/crait/Arduboy-Video-Player/blob/main/Icon.png?raw=true" /> <img style="height: 200px;" src="https://github.com/crait/Arduboy-Video-Player/blob/main/Example.gif?raw=true" />
 
 ### Created by Jonathan Holmes (crait)
 
@@ -7,7 +7,6 @@ Website: http://www.crait.net/
 Twitter: @crait (http://www.twitter.com/crait)
 
 Bluesky: @crait.bsky.social (http://crait.bsky.social)
-
 
 ### Arduboy Video Player
 *Version 1.0 - December 6, 2023*
