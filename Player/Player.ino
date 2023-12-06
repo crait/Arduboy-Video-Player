@@ -789,8 +789,12 @@ void show_video() {
 	if(play_speed > 0) {
 		frame += play_speed;
 	} else if(play_speed < 0) {
-		if(looping && (frame < (0 - play_speed))) {
-			frame = frame_count;
+		if(frame < (0 - play_speed)) {
+			if(looping) {
+				frame = frame_count - 1;
+			} else {
+				frame = 0;
+			}
 		} else {
 			frame += play_speed;
 		}
