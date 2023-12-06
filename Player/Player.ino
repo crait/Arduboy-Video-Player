@@ -849,7 +849,6 @@ void setup() {
 	video_address += title_length + duration_length + 2;
 
 	arduboy.setFrameRate(DEFAULT_FPS);
-	Serial.begin(9600);
 }
 
 void loop() {
@@ -872,6 +871,5 @@ void loop() {
 			break;
 	}
 
-	Serial.write(arduboy.getBuffer(), 128 * 64 / 8);
 	FX::display(CLEAR_BUFFER);
 }
