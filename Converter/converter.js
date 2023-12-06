@@ -56,20 +56,20 @@ const util = require('util')
 const ffmpeg_p = util.promisify(ffmpeg)
 
 const readable_duration = (seconds) => {
-	var h = Math.floor(seconds / 3600);
-	var m = Math.floor(seconds % 3600 / 60);
-	var s = Math.floor(seconds % 3600 % 60);
+	var h = Math.floor(seconds / 3600)
+	var m = Math.floor(seconds % 3600 / 60)
+	var s = Math.floor(seconds % 3600 % 60)
 
-	var hours = h > 0 ? h + 'h' : '';
+	var hours = h > 0 ? h + 'h' : ''
 	if(h > 0 && (m > 0 || s > 0)) {
-		h += ', '
+		hours += ', '
 	}
-	var minutes = m > 0 || h > 0 ? m + 'm' : '';
+	var minutes = m > 0 ? m + 'm' : ''
 	if(m > 0 && s > 0) {
 		minutes += ', '
 	}
-	var seconds = s > 0 ? s + 's' : '';
-	return hours + minutes + seconds; 
+	var seconds = s > 0 ? s + 's' : ''
+	return hours + minutes + seconds 
 }
 
 const splash = `\t${application.name}\n\tBy ${application.author}\n\tVersion ${application.version}\n\n`

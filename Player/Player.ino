@@ -51,7 +51,8 @@ Arduboy2 arduboy;
 #include <ArduboyFX.h>
 
 #include "video.h"
-#define DEFAULT_FPS		20
+#define DEFAULT_FPS			20
+#define MIN_UI_FRAMERATE	10
 
 const unsigned char title_screen[] PROGMEM {
 	0xff, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -534,6 +535,9 @@ uint16_t encoding = 0;
 uint16_t width = 0;
 uint16_t height = 0;
 uint16_t fps = 0;
+uint16_t calculated_fps = 0;
+uint16_t calculated_fps_counter = 0;
+uint16_t calculated_fps_counter_max = 0;
 uint16_t frame_count = 0;
 uint16_t title_length = 0;
 uint16_t duration_length = 0;
@@ -669,7 +673,7 @@ void show_title() {
 	
 	if(arduboy.justReleased(A_BUTTON)) {
 		gamestate = STATE_VIDEO;
-		arduboy.setFrameRate(fps);
+		arduboy.setFrameRate(calculated_fps);
 	}
 }
 
@@ -744,9 +748,6 @@ void show_video() {
 
 	if(show_bar) {
 		if(toolbar_offset < TOOLBAR_HEIGHT) {
-			if(fps < 10) {
-				toolbar_offset++;
-			}
 			toolbar_offset++;
 		} else {
 			if(info_offset == 0) {
@@ -768,9 +769,6 @@ void show_video() {
 		}
 	} else {
 		if(toolbar_offset > 0) {
-			if(fps < 10) {
-				toolbar_offset--;
-			}
 			toolbar_offset--;
 		} else {
 			if(arduboy.justReleased(B_BUTTON)) {
@@ -786,17 +784,21 @@ void show_video() {
 		}
 	}
 
-	if(play_speed > 0) {
-		frame += play_speed;
-	} else if(play_speed < 0) {
-		if(frame < (0 - play_speed)) {
-			if(looping) {
-				frame = frame_count - 1;
-			} else {
-				frame = 0;
-			}
-		} else {
+	calculated_fps_counter++;
+	if(calculated_fps_counter >= calculated_fps_counter_max) {
+		calculated_fps_counter = 0;
+		if(play_speed > 0) {
 			frame += play_speed;
+		} else if(play_speed < 0) {
+			if(frame < (0 - play_speed)) {
+				if(looping) {
+					frame = frame_count - 1;
+				} else {
+					frame = 0;
+				}
+			} else {
+				frame += play_speed;
+			}
 		}
 	}
 
@@ -816,9 +818,6 @@ void show_video() {
 		arduboy.drawBitmap(0, 0 - title_transition, title_screen, 128, 64, WHITE);
 
 		title_transition += 3;
-		if(fps < 10) {
-			title_transition += 13 - fps;
-		}
 		if(title_transition >= 64) {
 			title_transition = 64;
 		}
@@ -834,6 +833,13 @@ void setup() {
 	height = FX::readIndexedUInt16(0x0000, 2);
 	frame_count = FX::readIndexedUInt16(0x0000, 3);
 	fps = FX::readIndexedUInt16(0x0000, 4);
+	calculated_fps = fps;
+	if(calculated_fps != 0) {
+		while(calculated_fps < MIN_UI_FRAMERATE) {
+			calculated_fps *= 2;
+		}
+		calculated_fps_counter_max = calculated_fps / fps;
+	}
 	title_length = FX::readIndexedUInt16(0x0000, 5);
 	duration_length = FX::readIndexedUInt16(0x0000, 6);
 

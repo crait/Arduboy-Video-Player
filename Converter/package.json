@@ -2,9 +2,9 @@
   "name": "Arduboy Video Converter",
   "version": "1.0.0",
   "description": "A script to convert video files to be playable by the Arduboy Video Player",
-  "main": "converter.js",
+  "main": "Converter.js",
   "scripts": {
-    "start": "node ./converter.js"
+    "start": "node ./Converter.js"
   },
   "author": "Jonathan Holmes (@crait)",
   "license": "ISC",
