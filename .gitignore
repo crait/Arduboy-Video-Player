@@ -1,4 +1,5 @@
 Player/video.h
+Player/build/
 Converter/*.mov
 Converter/*.mpeg
 Converter/*.webp
