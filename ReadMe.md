@@ -9,7 +9,7 @@ Twitter: @crait (http://www.twitter.com/crait)
 Bluesky: @crait.bsky.social (http://crait.bsky.social)
 
 ### Arduboy Video Player
-*Version 1.0 - December 6, 2023*
+*Version 1.1 - December 7, 2023*
 
 The Arduboy Video Player is a simple video player for the Arduboy FX. It plays uncompressed video files that are created using the Node.js program located in the `Converter/` directory.
 
